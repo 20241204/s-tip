@@ -50,9 +50,8 @@ jobs:
             port=$(jq -cr '.port' <<<"$info")
             pass=$(jq -cr '.password' <<<"$info")
             # 自定义执行命令
-            script="ps -o pid,%cpu,%mem,comm && uname -moprsv && exit"
-            output=$(sshpass -p "$pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p "$port" -tt "$user@$host" "bash -s" <<<"$script" 2>/dev/null)
-            if [ "$?" = 0 ]; then
+            script="clear && ps -o pid,%cpu,%mem,comm && uname -moprsv && exit"
+            if output=$(sshpass -p "$pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p "$port" -tt "$user@$host" "bash -s" <<<"$script" 2>/dev/null); then
               echo "登录成功"
               outputs="登录成功请检查! "$(echo -e "\n主机: ${host}\n用户: ${user}\n日志: ${output}")
               tgsend "${outputs}"
