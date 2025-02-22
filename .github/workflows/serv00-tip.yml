@@ -52,15 +52,16 @@ jobs:
             # 自定义执行命令
             script="ps -o pid,%cpu,%mem,comm && uname -moprsv && exit"
             output=$(sshpass -p "$pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p "$port" -tt "$user@$host" "bash -s" <<<"$script" 2>/dev/null)
-            outputs=$(echo -e "\n主机: ${host}\n用户: ${user}\n日志: ${output}")
-            echo "${outputs}" >> result.txt
-            if echo "$output" | grep -q "$host"; then
+            if [ "$?" = 0 ]; then
               echo "登录成功"
-              tgsend "登录成功请检查! ${outputs}"
+              outputs="登录成功请检查! "$(echo -e "\n主机: ${host}\n用户: ${user}\n日志: ${output}")
+              tgsend "${outputs}"
             else
               echo "登录失败"
-              tgsend "登录失败请检查! ${outputs}"
+              outputs="登录失败请检查! "$(echo -e "\n主机: ${host}\n用户: ${user}\n日志: ${output}")
+              tgsend "${outputs}"
             fi
+            echo "${outputs}" >> result.txt
           done
 
       # 发送附件到邮件
