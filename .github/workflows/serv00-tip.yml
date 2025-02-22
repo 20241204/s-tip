@@ -1,0 +1,92 @@
+name: 批量保活进程
+
+# 配置触发条件
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "master" branch
+  # Runs every 5 minutes.
+  # Runs at 00:00 UTC every day.
+  # Actions schedules run at most every 5 minutes.
+  schedule:
+    # - cron: '*/5 * * * *'
+    - cron: '3 22 * * *' #北京时间6点
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  serv00-tip:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # timeout-minutes: 9999
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Runs a single command using the runners shell
+      - name: Run serv00 tip
+        run: |
+          sudo apt-get install sshpass
+          sudo apt-get install jq
+          # 使用 jq 提取 JSON 数组，并将其加载为 Bash 数组
+          hosts_info=($(echo ${{ secrets.HOSTS_JSON }} | jq -c ".info[]"))
+          tgsend() {
+            message_text=$1
+            #解析模式，可选HTML或Markdown
+            MODE='HTML'
+            #api接口
+            telegramBotToken=${{secrets.TELEGRAM_TOKEN}}
+            telegramBotUserId=${{secrets.TELEGRAM_USERID}}
+
+            URL="https://api.telegram.org/bot${telegramBotToken}/sendMessage"
+            if [[ -z ${telegramBotToken} ]]; then
+              echo "未配置TG推送"
+            else
+              res=$(timeout 20s curl -s -X POST $URL -d chat_id=${telegramBotUserId} -d parse_mode=${MODE} -d text="${message_text}")
+              if [ $? == 124 ]; then
+                echo 'TG_api请求超时,请检查网络是否重启完成并是否能够访问TG'
+                exit 1
+              fi
+              resSuccess=$(echo "$res" | jq -r ".ok")
+              if [[ $resSuccess = "true" ]]; then
+                echo "TG推送成功"
+              else
+                echo "TG推送失败，请检查TG机器人token和ID"
+              fi
+            fi
+          }
+
+          for info in "${hosts_info[@]}"; do
+            user=$(echo $info | jq -r ".username")
+            host=$(echo $info | jq -r ".host")
+            port=$(echo $info | jq -r ".port")
+            pass=$(echo $info | jq -r ".password")
+
+            script="uname -a && sleep 10 && ps -o pid,%cpu,%mem,comm && exit"
+            output=$(echo \\n主机:$host\\n用户名:$user\\n$$(sshpass -p "$pass" ssh -o StrictHostKeyChecking=no -p "$port" "$user@$host" "bash -s" <<< "$script"))
+            echo "$output" >> result.txt
+            if echo "$output" | grep -q "$host"; then
+              echo "登录成功"
+              tgsend "登录成功请检查! $output"
+            else
+              echo "登录失败"
+              tgsend "登录失败请检查! $output"
+            fi
+          done
+      # 发送附件到邮件
+      - name: Send email with attachments
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.MAILADDR }}
+          server_port: ${{ secrets.MAILPORT }}
+          username: ${{ secrets.MAILUSERNAME }}
+          password: ${{ secrets.MAILPASSWORD }}
+          subject: 创建 serv00 提示信息
+          to: ${{ secrets.MAILSENDTO }}
+          from: GitHub Actions
+          body: run job of ${{ github.repository }} completed successfully!
+          attachments: |
+            result.txt
+      - name: Run rm -frv result.txt
+        run: |
+            rm -frv result.txt
