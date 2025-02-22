@@ -49,9 +49,12 @@ jobs:
             host=$(jq -cr '.host' <<<"$info")
             port=$(jq -cr '.port' <<<"$info")
             pass=$(jq -cr '.password' <<<"$info")
-            script="uname -a && sleep 10 && echo -e "\n" ; ps -o pid,%cpu,%mem,comm && exit"
+            # 自定义执行脚本
+            script="uname -a && sleep 5 && echo -e \\n ; ps -o pid,%cpu,%mem,comm && exit"
             output=$(sshpass -p "$pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p "$port" -tt "$user@$host" "bash -s" <<<"$script")
-            outputs=$(echo -e "主机: ${host}\n用户名: ${user}\n${output}")
+            # 等待执行
+            sleep 5
+            outputs=$(echo -e "\n主机: ${host}\n用户: ${user}\n日志: ${output}")
             echo "${outputs}" >> result.txt
             if echo "$output" | grep -q "$host"; then
               echo "登录成功"
