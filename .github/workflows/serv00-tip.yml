@@ -51,7 +51,7 @@ jobs:
             pass=$(jq -cr '.password' <<<"$info")
             # 自定义执行命令
             script="uname -a && ps -o pid,%cpu,%mem,comm && exit"
-            output=$(sshpass -p "$pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p "$port" -tt "$user@$host" <<<"$script")
+            output=$(sshpass -p "$pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p "$port" -tt "$user@$host" bash <<<"$script" 2>/dev/null)
             # 等待执行
             sleep 5
             outputs=$(echo -e "\n主机: ${host}\n用户: ${user}\n日志: ${output}")
