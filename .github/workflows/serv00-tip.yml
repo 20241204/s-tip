@@ -17,9 +17,9 @@ jobs:
           echo "依赖包安装完成。"
 
       - name: Run serv00 tip
+        env:
+          HOSTS_JSON: ${{ secrets.HOSTS_JSON }}
         run: |
-          cat << 'SCRIPT' | tee ./script.sh
-          #!/usr/bin/env bash
           echo "开始运行主任务..."
           tgsend() {
             local message_text="$1"
@@ -43,9 +43,8 @@ jobs:
               fi
             fi
           }
-
           # 使用 jq 提取 JSON 数组，并将其加载为 Bash 数组
-          jq -cr '.info[]' <<<"${{ secrets.HOSTS_JSON }}" | while read -r info; do
+          jq -cr '.info[]' <<<"${HOSTS_JSON}" | while read -r info; do
             user=$(jq -cr '.username' <<<"$info")
             host=$(jq -cr '.host' <<<"$info")
             port=$(jq -cr '.port' <<<"$info")
@@ -63,9 +62,6 @@ jobs:
             fi
           done
           SCRIPT
-          chmod +x ./script.sh
-          ./script.sh
-          rm -fv ./script.sh
 
       - name: Send email with attachments
         if: success()
