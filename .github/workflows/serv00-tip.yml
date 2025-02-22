@@ -18,26 +18,54 @@ jobs:
 
       - name: Run serv00 tip
         run: |
-          cat << '20241204' | tee ./20241204.sh
+          cat << 'SCRIPT' | tee ./script.sh
+          #!/usr/bin/env bash
           echo "开始运行主任务..."
-          echo "${{ secrets.HOSTS_JSON }}"
+          tgsend() {
+            local message_text="$1"
+            local MODE="HTML"
+            local telegramBotToken="${{ secrets.TELEGRAM_TOKEN }}"
+            local telegramBotUserId="${{ secrets.TELEGRAM_USERID }}"
+            local URL="https://api.telegram.org/bot${telegramBotToken}/sendMessage"
+            if [[ -z "${telegramBotToken}" ]]; then
+              echo "未配置TG推送"
+            else
+              local res=$(timeout 20s curl -s -X POST "$URL" -d chat_id="$telegramBotUserId" -d parse_mode="$MODE" -d text="$message_text")
+              if [[ $? == 124 ]]; then
+                echo 'TG_api请求超时,请检查网络是否重启完成并是否能够访问TG'
+                exit 1
+              fi
+              local resSuccess=$(echo "$res" | jq -cr ".ok")
+              if [[ "$resSuccess" == "true" ]]; then
+                echo "TG推送成功"
+              else
+                echo "TG推送失败，请检查TG机器人token和ID"
+              fi
+            fi
+          }
+
           # 使用 jq 提取 JSON 数组，并将其加载为 Bash 数组
-          hosts_info=($(echo "${{ secrets.HOSTS_JSON }}" | jq -c ".info[]"))
-          for info in "${hosts_info[@]}"; do
+          jq -cr '.info[]' <<<"${{ secrets.HOSTS_JSON }}" | while read -r info; do
+            user=$(jq -cr '.username' <<<"$info")
+            host=$(jq -cr '.host' <<<"$info")
+            port=$(jq -cr '.port' <<<"$info")
+            pass=$(jq -cr '.password' <<<"$info")
             echo "处理主机信息: $info"
-            user=$(echo $info | jq -r ".username")
-            host=$(echo $info | jq -r ".host")
-            port=$(echo $info | jq -r ".port")
-            pass=$(echo $info | jq -r ".password")
-            echo "$user"
-            echo "$host"
-            echo "$port"
-            echo "$pass"
+            script="uname -a && sleep 10 && ps -o pid,%cpu,%mem,comm && exit"
+            output=$(sshpass -p "$pass" ssh -o StrictHostKeyChecking=no -p "$port" "$user@$host" "bash -s" <<<"$script")
+            echo -e "\n主机:$host\n用户名:$user\n$output" >> result.txt
+            if echo "$output" | grep -q "$host"; then
+              echo "登录成功"
+              tgsend "登录成功请检查! $output"
+            else
+              echo "登录失败"
+              tgsend "登录失败请检查! $output"
+            fi
           done
-          20241204
-          chmod -v a+x ./20241204.sh
-          ./20241204.sh
-          rm -frv ./20241204.sh
+          SCRIPT
+          chmod +x ./script.sh
+          ./script.sh
+          rm -fv ./script.sh
 
       - name: Send email with attachments
         if: success()
