@@ -60,7 +60,6 @@ jobs:
               tgsend "登录失败请检查! $output"
             fi
           done
-          SCRIPT
 
       - name: Send email with attachments
         if: success()
