@@ -31,7 +31,7 @@ jobs:
             else
               local res=$(timeout 20s curl -s -X POST "$URL" -d chat_id="$telegramBotUserId" -d parse_mode="$MODE" -d text="$message_text")
               if [[ $? == 124 ]]; then
-                echo "TG_api请求超时,请检查网络是否重启完成并是否能够访问TG"
+                echo 'TG_api请求超时,请检查网络是否重启完成并是否能够访问TG'
                 exit 1
               fi
               local resSuccess=$(echo "$res" | jq -r ".ok")
@@ -43,7 +43,7 @@ jobs:
             fi
           }
 
-          echo "${{ secrets.HOSTS_JSON }}" | jq -c '.info[]' | while read -r info; do
+          echo "${{ secrets.HOSTS_JSON }}" | jq -c '.info[]' | while IFS= read -r info; do
             echo "处理主机信息: $info"
             user=$(echo "$info" | jq -r ".username")
             host=$(echo "$info" | jq -r ".host")
