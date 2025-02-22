@@ -58,10 +58,16 @@ jobs:
             echo "${outputs}" >> result.txt
             if echo "$output" | grep -q "$host"; then
               echo "登录成功"
-              tgsend "登录成功请检查! ${outputs}"
+              tgsend "登录成功请检查!
+              主机: ${host}
+              用户: ${user}
+              日志: ${output}"
             else
               echo "登录失败"
-              tgsend "登录失败请检查! ${outputs}"
+              tgsend "登录失败请检查!
+              主机: ${host}
+              用户: ${user}
+              日志: ${output}"
             fi
           done
 
