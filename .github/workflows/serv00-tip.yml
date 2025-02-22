@@ -20,9 +20,9 @@ jobs:
         run: |
           cat << '20241204' | tee ./20241204.sh
           echo "开始运行主任务..."
-          echo "${HOSTS_JSON}"
+          echo "${{ secrets.HOSTS_JSON }}"
           # 使用 jq 提取 JSON 数组，并将其加载为 Bash 数组
-          hosts_info=($(echo "${HOSTS_JSON}" | jq -c ".info[]"))
+          hosts_info=($(echo "${{ secrets.HOSTS_JSON }}" | jq -c ".info[]"))
           for info in "${hosts_info[@]}"; do
             echo "处理主机信息: $info"
             user=$(echo $info | jq -r ".username")
