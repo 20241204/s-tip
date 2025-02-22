@@ -1,6 +1,5 @@
 name: 批量保活进程
 
-# 配置触发条件
 on:
   schedule:
     - cron: '3 22 * * *' #北京时间6点
@@ -10,34 +9,38 @@ jobs:
   serv00-tip:
     runs-on: ubuntu-latest
     steps:
+      - name: Set up and install dependencies
+        run: |
+          echo "开始设置和安装依赖包..."
+          sudo apt-get update
+          sudo apt-get install -y sshpass jq
+          echo "依赖包安装完成。"
+
       - name: Run serv00 tip
         run: |
-          tgsend(){
-            message_text=$1
-            MODE='HTML'
-            telegramBotToken=${{ secrets.TELEGRAM_TOKEN }}
-            telegramBotUserId=${{ secrets.TELEGRAM_USERID }}
-            URL="https://api.telegram.org/bot${telegramBotToken}/sendMessage"
+          echo "开始运行主任务..."
+          tgsend() {
+            local message_text=$1
+            local MODE='HTML'
+            local telegramBotToken=${{ secrets.TELEGRAM_TOKEN }}
+            local telegramBotUserId=${{ secrets.TELEGRAM_USERID }}
+            local URL="https://api.telegram.org/bot${telegramBotToken}/sendMessage"
             if [[ -z ${telegramBotToken} ]]; then
               echo "未配置TG推送"
             else
-              res=$(timeout 20s curl -s -X POST $URL -d chat_id=${telegramBotUserId} -d parse_mode=${MODE} -d text="${message_text}")
-              if [ $? == 124 ]; then
+              local res=$(timeout 20s curl -s -X POST $URL -d chat_id=${telegramBotUserId} -d parse_mode=${MODE} -d text="${message_text}")
+              if [[ $? == 124 ]]; then
                 echo 'TG_api请求超时,请检查网络是否重启完成并是否能够访问TG'
                 exit 1
               fi
-              resSuccess=$(echo "$res" | jq -r ".ok")
-              if [[ $resSuccess = "true" ]]; then
+              local resSuccess=$(echo "$res" | jq -r ".ok")
+              if [[ $resSuccess == "true" ]]; then
                 echo "TG推送成功"
               else
                 echo "TG推送失败，请检查TG机器人token和ID"
               fi
             fi
           }
-
-          sudo apt-get install sshpass
-          sudo apt-get install jq
-          
           echo "${{ secrets.HOSTS_JSON }}" | jq -c '.info[]' | while read -r info; do
             user=$(echo "$info" | jq -r ".username")
             host=$(echo "$info" | jq -r ".host")
@@ -67,9 +70,7 @@ jobs:
           to: ${{ secrets.MAILSENDTO }}
           from: GitHub Actions
           body: run job of ${{ github.repository }} completed successfully!
-          attachments: |
-            result.txt
+          attachments: result.txt
 
       - name: Run rm -frv result.txt
-        run: |
-            rm -frv result.txt
+        run: rm -frv result.txt
