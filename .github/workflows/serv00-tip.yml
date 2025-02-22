@@ -19,13 +19,15 @@ jobs:
       - name: Run serv00 tip
         env:
           HOSTS_JSON: ${{ secrets.HOSTS_JSON }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_USERID: ${{ secrets.TELEGRAM_USERID }}
         run: |
           echo "开始运行主任务..."
           tgsend() {
             local message_text="$1"
             local MODE="HTML"
-            local telegramBotToken="${{ secrets.TELEGRAM_TOKEN }}"
-            local telegramBotUserId="${{ secrets.TELEGRAM_USERID }}"
+            local telegramBotToken="${TELEGRAM_TOKEN}"
+            local telegramBotUserId="${TELEGRAM_USERID}"
             local URL="https://api.telegram.org/bot${telegramBotToken}/sendMessage"
             if [[ -z "${telegramBotToken}" ]]; then
               echo "未配置TG推送"
