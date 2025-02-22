@@ -43,23 +43,7 @@ jobs:
             fi
           }
 
-          echo "${{ secrets.HOSTS_JSON }}" | jq -c '.info[]' | while IFS= read -r info; do
-            echo "处理主机信息: $info"
-            user=$(echo "$info" | jq -r ".username")
-            host=$(echo "$info" | jq -r ".host")
-            port=$(echo "$info" | jq -r ".port")
-            pass=$(echo "$info" | jq -r ".password")
-            script="uname -a && sleep 10 && ps -o pid,%cpu,%mem,comm && exit"
-            output=$(sshpass -p "$pass" ssh -o StrictHostKeyChecking=no -p "$port" "$user@$host" "bash -s" <<< "$script")
-            echo -e "\n主机:$host\n用户名:$user\n$output" >> result.txt
-            if echo "$output" | grep -q "$host"; then
-              echo "登录成功"
-              tgsend "登录成功请检查! $output"
-            else
-              echo "登录失败"
-              tgsend "登录失败请检查! $output"
-            fi
-          done
+          echo "${{ secrets.HOSTS_JSON }}" | jq -c '.info[]'
 
       - name: Send email with attachments
         if: success()
