@@ -50,7 +50,7 @@ jobs:
             port=$(jq -cr '.port' <<<"$info")
             pass=$(jq -cr '.password' <<<"$info")
             # 自定义执行命令
-            script="clear && ps -o pid,%cpu,%mem,comm && uname -moprsv && exit"
+            script="ps -o pid,%cpu,%mem,comm && uname -moprsv && exit"
             output=$(sshpass -p "$pass" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p "$port" -tt "$user@$host" bash -s <<<"$script" 2>/dev/null)
             # 等待执行
             sleep 5
