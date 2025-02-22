@@ -26,13 +26,11 @@ jobs:
           tgsend() {
             local message_text="$1"
             local MODE="HTML"
-            local telegramBotToken="${TELEGRAM_TOKEN}"
-            local telegramBotUserId="${TELEGRAM_USERID}"
-            local URL="https://api.telegram.org/bot${telegramBotToken}/sendMessage"
-            if [[ -z "${telegramBotToken}" ]]; then
+            local URL="https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage"
+            if [[ -z "${TELEGRAM_TOKEN}" ]]; then
               echo "未配置TG推送"
             else
-              local res=$(timeout 20s curl -s -X POST "$URL" -d chat_id="$telegramBotUserId" -d parse_mode="$MODE" -d text="$message_text")
+              local res=$(timeout 20s curl -s -X POST "$URL" -d chat_id="${TELEGRAM_USERID}" -d parse_mode="$MODE" -d text="$message_text")
               if [[ $? == 124 ]]; then
                 echo 'TG_api请求超时,请检查网络是否重启完成并是否能够访问TG'
                 exit 1
