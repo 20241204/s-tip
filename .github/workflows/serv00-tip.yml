@@ -18,26 +18,26 @@ jobs:
 
       - name: Run serv00 tip
         run: |
-        cat << '20241204' | tee ./20241204.sh
-        echo "开始运行主任务..."
-        echo "${HOSTS_JSON}"
-        # 使用 jq 提取 JSON 数组，并将其加载为 Bash 数组
-        hosts_info=($(echo "${HOSTS_JSON}" | jq -c ".info[]"))
-        for info in "${hosts_info[@]}"; do
-          echo "处理主机信息: $info"
-          user=$(echo $info | jq -r ".username")
-          host=$(echo $info | jq -r ".host")
-          port=$(echo $info | jq -r ".port")
-          pass=$(echo $info | jq -r ".password")
-          echo "$user"
-          echo "$host"
-          echo "$port"
-          echo "$pass"
-        done
-        20241204
-        chmod -v a+x ./20241204.sh
-        ./20241204.sh
-        rm -frv ./20241204.sh
+          cat << '20241204' | tee ./20241204.sh
+          echo "开始运行主任务..."
+          echo "${HOSTS_JSON}"
+          # 使用 jq 提取 JSON 数组，并将其加载为 Bash 数组
+          hosts_info=($(echo "${HOSTS_JSON}" | jq -c ".info[]"))
+          for info in "${hosts_info[@]}"; do
+            echo "处理主机信息: $info"
+            user=$(echo $info | jq -r ".username")
+            host=$(echo $info | jq -r ".host")
+            port=$(echo $info | jq -r ".port")
+            pass=$(echo $info | jq -r ".password")
+            echo "$user"
+            echo "$host"
+            echo "$port"
+            echo "$pass"
+          done
+          20241204
+          chmod -v a+x ./20241204.sh
+          ./20241204.sh
+          rm -frv ./20241204.sh
 
       - name: Send email with attachments
         if: success()
