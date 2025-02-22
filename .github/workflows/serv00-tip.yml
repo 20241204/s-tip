@@ -20,7 +20,7 @@ jobs:
         run: |
           echo "开始运行主任务..."
           cat /home/runner/work/_temp/*.sh
-          echo "${{ secrets.HOSTS_JSON }}" | jq -c '.info[]'
+          echo ${{ secrets.HOSTS_JSON }} | jq -c '.info[]'
 
       - name: Send email with attachments
         if: success()
