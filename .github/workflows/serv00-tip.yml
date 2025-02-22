@@ -1,35 +1,20 @@
 name: 批量保活进程
 
 # 配置触发条件
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "master" branch
-  # Runs every 5 minutes.
-  # Runs at 00:00 UTC every day.
-  # Actions schedules run at most every 5 minutes.
   schedule:
-    # - cron: '*/5 * * * *'
     - cron: '3 22 * * *' #北京时间6点
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   serv00-tip:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    # timeout-minutes: 9999
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Runs a single command using the runners shell
       - name: Run serv00 tip
         run: |
           tgsend(){
             message_text=$1
-            #解析模式，可选HTML或Markdown
             MODE='HTML'
-            #api接口
             telegramBotToken=${{ secrets.TELEGRAM_TOKEN }}
             telegramBotUserId=${{ secrets.TELEGRAM_USERID }}
             URL="https://api.telegram.org/bot${telegramBotToken}/sendMessage"
@@ -49,18 +34,18 @@ jobs:
               fi
             fi
           }
+
           sudo apt-get install sshpass
           sudo apt-get install jq
-          # 使用 jq 提取 JSON 数组，并将其加载为 Bash 数组
-          hosts_info=$(echo "${{ secrets.HOSTS_JSON }}" | jq -c ".info[]")
-          for info in $(echo "$hosts_info"); do
+          
+          echo "${{ secrets.HOSTS_JSON }}" | jq -c '.info[]' | while read -r info; do
             user=$(echo "$info" | jq -r ".username")
             host=$(echo "$info" | jq -r ".host")
             port=$(echo "$info" | jq -r ".port")
             pass=$(echo "$info" | jq -r ".password")
             script="uname -a && sleep 10 && ps -o pid,%cpu,%mem,comm && exit"
-            output=$(echo -e "\n主机:$host\n用户名:$user\n$(sshpass -p '$pass' ssh -o StrictHostKeyChecking=no -p '$port' '$user@$host' 'bash -s' <<< '$script')")
-            echo "$output" >> result.txt
+            output=$(sshpass -p "$pass" ssh -o StrictHostKeyChecking=no -p "$port" "$user@$host" "bash -s" <<< "$script")
+            echo -e "\n主机:$host\n用户名:$user\n$output" >> result.txt
             if echo "$output" | grep -q "$host"; then
               echo "登录成功"
               tgsend "登录成功请检查! $output"
@@ -70,7 +55,6 @@ jobs:
             fi
           done
 
-      # 发送附件到邮件
       - name: Send email with attachments
         if: success()
         uses: dawidd6/action-send-mail@v3
@@ -86,7 +70,6 @@ jobs:
           attachments: |
             result.txt
 
-      # 清理文件
       - name: Run rm -frv result.txt
         run: |
             rm -frv result.txt
