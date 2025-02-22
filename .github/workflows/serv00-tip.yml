@@ -19,29 +19,32 @@ jobs:
       - name: Run serv00 tip
         run: |
           echo "开始运行主任务..."
+          
           tgsend() {
-            local message_text=$1
-            local MODE='HTML'
-            local telegramBotToken=${{ secrets.TELEGRAM_TOKEN }}
-            local telegramBotUserId=${{ secrets.TELEGRAM_USERID }}
+            local message_text="$1"
+            local MODE="HTML"
+            local telegramBotToken="${{ secrets.TELEGRAM_TOKEN }}"
+            local telegramBotUserId="${{ secrets.TELEGRAM_USERID }}"
             local URL="https://api.telegram.org/bot${telegramBotToken}/sendMessage"
-            if [[ -z ${telegramBotToken} ]]; then
+            if [[ -z "${telegramBotToken}" ]]; then
               echo "未配置TG推送"
             else
-              local res=$(timeout 20s curl -s -X POST $URL -d chat_id=${telegramBotUserId} -d parse_mode=${MODE} -d text="${message_text}")
+              local res=$(timeout 20s curl -s -X POST "$URL" -d chat_id="$telegramBotUserId" -d parse_mode="$MODE" -d text="$message_text")
               if [[ $? == 124 ]]; then
-                echo 'TG_api请求超时,请检查网络是否重启完成并是否能够访问TG'
+                echo "TG_api请求超时,请检查网络是否重启完成并是否能够访问TG"
                 exit 1
               fi
               local resSuccess=$(echo "$res" | jq -r ".ok")
-              if [[ $resSuccess == "true" ]]; then
+              if [[ "$resSuccess" == "true" ]]; then
                 echo "TG推送成功"
               else
                 echo "TG推送失败，请检查TG机器人token和ID"
               fi
             fi
           }
+
           echo "${{ secrets.HOSTS_JSON }}" | jq -c '.info[]' | while read -r info; do
+            echo "处理主机信息: $info"
             user=$(echo "$info" | jq -r ".username")
             host=$(echo "$info" | jq -r ".host")
             port=$(echo "$info" | jq -r ".port")
